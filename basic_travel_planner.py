@@ -112,7 +112,7 @@ def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, 
     # if there are multiple prioritized destinations, find the one we plan to spend most times on
         l = [a for a in range(len(start_the_day_with)) if start_the_day_with[a] == True]
         i = l[[stay_durations[i] for i in l].index(max([stay_durations[i] for i in l]))]
- #       i = start_the_day_with.index(True)
+        
     else:
     # else we start the day with a destination that is furthest away from the hotel
         i = distance_matrix[0].index(sorted(distance_matrix[0])[len(labels)-1])
