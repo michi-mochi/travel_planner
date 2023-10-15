@@ -1,22 +1,32 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[25]:
+# In[15]:
 
 
 import numpy as np
 import requests
 
 
-# In[26]:
+# In[16]:
 
 
-# Enter your Google Maps API key
+# Enter Google Maps API key
 gmaps_key = ''
 
 
-# In[27]:
+# In[17]:
 
+
+# Call Google Maps API
+
+# Input:
+# source(string) - address to start the journey
+# dest(string) - address to end the journey
+# gmaps_key(string) - Google Maps API key
+
+# Output:
+# distance(float) and travel_time(integer) stored in a list
 
 def get_api(source, dest, gmaps_key):
     url ='https://maps.googleapis.com/maps/api/distancematrix/json?'
@@ -30,10 +40,17 @@ def get_api(source, dest, gmaps_key):
     return [float(distance),round(travel_time,1)]
 
 
-# In[28]:
+# In[18]:
 
 
-#construct a source-destination pair
+# Construct a source-destination pair
+
+# Input:
+# addresses(list) - addresses of the hotel and the destinations
+
+# Output:
+# lists of source and destination pairs stored in a list
+
 def construct_source_dest_pair(addresses):
     source_dest_pair = []
     for i in range(0,len(addresses)): # source
@@ -42,10 +59,18 @@ def construct_source_dest_pair(addresses):
     return source_dest_pair
 
 
-# In[29]:
+# In[19]:
 
 
-#construct lists to store distance & travel time for each pair of locations
+# Construct lists to store distance & travel time for each pair of locations
+
+# Input:
+# source_dest_pair(list) - list of lists of source and destinations pairs
+# gmaps_key(string) - Google Maps API key
+
+# Output:
+# distances for each pair of locations(list), travel times for each pair of locations(list) stored in a list
+
 def calculate_distance_and_travel_time(source_dest_pair,gmaps_key):
     distance_list=[]
     travel_time_list=[]
@@ -58,8 +83,17 @@ def calculate_distance_and_travel_time(source_dest_pair,gmaps_key):
     return distance_list,travel_time_list
 
 
-# In[30]:
+# In[20]:
 
+
+# Construct a matrix of distances from all source and destination pair
+
+# Input:
+# addresses(list) - addresses of the hotel and the destinations
+# dististance_list(list) - distances for each pair of locations
+
+# Output:
+# distance matrix for all source and destination pair(list)
 
 def create_distance_matrix(addresses,distance_list):
     distance_matrix=[]
@@ -79,8 +113,17 @@ def create_distance_matrix(addresses,distance_list):
     return distance_matrix
 
 
-# In[31]:
+# In[21]:
 
+
+# Construct a matrix of travel times from all source and destination pair
+
+# Input:
+# addresses(list) - addresses of the hotel and the destinations
+# travel_time_list(list) - travel times for each pair of locations
+
+# Output:
+# travel time matrix for all source and destination pair(list)
 
 def create_travel_time_matrix(addresses,travel_time_list):
     travel_time_matrix=[]
@@ -100,21 +143,41 @@ def create_travel_time_matrix(addresses,travel_time_list):
     return travel_time_matrix
 
 
-# In[464]:
+# In[22]:
 
 
-def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, labels, stay_durations, open_times, close_times, time_out_threshold, time_start):
+# Generate iternary based on the requirements
+
+# Input:
+# travel_time_matrix(list) - travel time matrix for all source and destination pair(list)
+# distance_matrix(list) - distance matrix for all source and destination pair(list)
+# labels(list) - labels(string) of each location
+# stay_durations(list) - stay durations(integer) of each location
+# open_times(list) - open times(integer) of each location, eg. 13 means the location opens at 1pm
+# close_times(list) - close times(integer) of each location, eg. 20 means the location closes at 8pm
+# time_out_threshold(integer) - maximum number of hours we plan for a day
+# time_start(integer) - time we want to start the day, eg. 9 means the plan starts at 9am
+# start_the_day_with(list) - indicators(boolean) of whether we want to go to this location as the first destination of a day
+
+
+
+
+# Output:
+# planned destinations(list)
+
+
+def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, labels, stay_durations, open_times, close_times, time_out_threshold, time_start, start_the_day_with):
     planned_dest = []
     time_spent = 0
     
-    if sum(start_the_day_with) > 0:
     # find destination that we want to start the day with
     # if there are multiple prioritized destinations, find the one we plan to spend most times on
+    if sum(start_the_day_with) > 0:
         l = [a for a in range(len(start_the_day_with)) if start_the_day_with[a] == True]
         i = l[[stay_durations[i] for i in l].index(max([stay_durations[i] for i in l]))]
-        
+
+    # else we start the day with a destination that is furthest away from the hotel        
     else:
-    # else we start the day with a destination that is furthest away from the hotel
         i = distance_matrix[0].index(sorted(distance_matrix[0])[len(labels)-1])
     print(labels[0], ' -> ', labels[i], '|| hours of operations: ', open_times[i], ':00 to ', 
       close_times[i], ':00 || distance:', distance_matrix[0][i], 'km || travels time:', 
@@ -125,7 +188,7 @@ def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, 
     planned_dest.append(i)
     time_spent += travel_time_matrix[0][i] + stay_durations[i]*60
     
-    # adding more destinations into the day
+    # add more destinations into the day
     while (time_spent < time_out_threshold * 0.6) and len(labels)>1:
         t = 1
         j = distance_matrix[i].index(sorted(distance_matrix[i])[t])
@@ -156,7 +219,7 @@ def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, 
             planned_dest.append(j)
             i = j
 
-        # route back to the hotel
+    # route back to the hotel
     print(labels[i], ' -> ', labels[0],'|| distance:', distance_matrix[i][0],
               'km || travels time:', travel_time_matrix[i][0],
               'min || arrival time: ', int(time_start+((time_spent+ travel_time_matrix[i][0])//60)), ':', 
@@ -171,7 +234,28 @@ def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, 
         
 
 
-# In[366]:
+# In[23]:
+
+
+# Remove locations from the lists
+
+# Input:
+# planned_dest(list): planned destinations
+# labels(list) - labels(string) of each location
+# addresses(list) - addresses of each location
+# stay_durations(list) - stay durations(integer) of each location
+# open_times(list) - open times(integer) of each location, eg. 13 means the location opens at 1pm
+# close_times(list) - close times(integer) of each location, eg. 20 means the location closes at 8pm
+# start_the_day_with(list) - indicators(boolean) of whether we want to go to this location as the first destination of a day
+
+# Output:
+# labels(list) - labels(string) of each location
+# addresses(list) - addresses of each location
+# stay_durations(list) - stay durations(integer) of each location
+# open_times(list) - open times(integer) of each location, eg. 13 means the location opens at 1pm
+# close_times(list) - close times(integer) of each location, eg. 20 means the location closes at 8pm
+# start_the_day_with(list) - indicators(boolean) of whether we want to go to this location as the first destination of a day
+
 
 
 def drop_destinations(planned_dest, labels, addresses, stay_durations, open_times, close_times, start_the_day_with):
@@ -187,13 +271,13 @@ def drop_destinations(planned_dest, labels, addresses, stay_durations, open_time
     return labels, addresses, stay_durations, open_times, close_times, start_the_day_with
 
 
-# In[466]:
+# In[24]:
 
 
-# Example 1: Sedona
+# Example 1: a trip to Sedona, Arizona
 
 addresses = [
-    '55 Sunridge Cir, Sedona, AZ 86351',
+    '260 Coffee Pot Dr, Sedona, AZ 86336',
     '171B Forest Rd, Flagstaff, AZ 86001',
     '2650 Pueblo Dr, Sedona, AZ 86336',
     '780 Chapel Rd, Sedona, AZ 86336',
@@ -272,13 +356,37 @@ start_the_day_with = [
 ]
 
 time_out_threshold = 660  
-time_start = 9 # time to start the day
+time_start = 9 
 
 
-# In[469]:
+# In[25]:
 
 
-# Example 2: Portland
+itinerary = []
+x = 1
+
+while len(labels)>1:
+    print('Day', x, ':')
+    source_dest_pair = construct_source_dest_pair(addresses)
+    distance_list,travel_time_list = calculate_distance_and_travel_time(source_dest_pair,gmaps_key)
+    distance_matrix = create_distance_matrix(addresses,distance_list)
+    travel_time_matrix = create_travel_time_matrix(addresses,travel_time_list)
+    planned_dest = limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, labels, stay_durations, open_times, close_times, time_out_threshold, time_start, start_the_day_with)
+    itinerary.append([labels[x] for x in planned_dest])
+    labels, addresses, stay_durations, open_times, close_times, start_the_day_with = drop_destinations(planned_dest, labels, addresses, stay_durations, open_times, close_times, start_the_day_with)
+    x += 1
+
+
+# In[26]:
+
+
+print(itinerary)
+
+
+# In[27]:
+
+
+# Example 2: a trip to Portland, Oregon
 addresses = [
     '11942 NE Sandy Blvd, Portland, OR 97220',
     '700 SW 6th Ave, Portland, OR 97204',
@@ -348,11 +456,11 @@ start_the_day_with = [
     False
 ]
 
-time_start = 10 # time to start the day
+time_start = 10
 time_out_threshold = 600 
 
 
-# In[470]:
+# In[28]:
 
 
 itinerary = []
@@ -364,20 +472,14 @@ while len(labels)>1:
     distance_list,travel_time_list = calculate_distance_and_travel_time(source_dest_pair,gmaps_key)
     distance_matrix = create_distance_matrix(addresses,distance_list)
     travel_time_matrix = create_travel_time_matrix(addresses,travel_time_list)
-    planned_dest = limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, labels, stay_durations, open_times, close_times, time_out_threshold, time_start)
+    planned_dest = limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, labels, stay_durations, open_times, close_times, time_out_threshold, time_start, start_the_day_with)
     itinerary.append([labels[x] for x in planned_dest])
     labels, addresses, stay_durations, open_times, close_times, start_the_day_with = drop_destinations(planned_dest, labels, addresses, stay_durations, open_times, close_times, start_the_day_with)
     x += 1
 
 
-# In[472]:
+# In[29]:
 
 
 print(itinerary)
-
-
-# In[ ]:
-
-
-
 
