@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[15]:
+# In[23]:
 
 
 import numpy as np
 import requests
 
 
-# In[16]:
+# In[24]:
 
 
 # Enter Google Maps API key
 gmaps_key = ''
 
 
-# In[17]:
+# In[25]:
 
 
 # Call Google Maps API
@@ -40,7 +40,7 @@ def get_api(source, dest, gmaps_key):
     return [float(distance),round(travel_time,1)]
 
 
-# In[18]:
+# In[26]:
 
 
 # Construct a source-destination pair
@@ -59,7 +59,7 @@ def construct_source_dest_pair(addresses):
     return source_dest_pair
 
 
-# In[19]:
+# In[27]:
 
 
 # Construct lists to store distance & travel time for each pair of locations
@@ -83,7 +83,7 @@ def calculate_distance_and_travel_time(source_dest_pair,gmaps_key):
     return distance_list,travel_time_list
 
 
-# In[20]:
+# In[28]:
 
 
 # Construct a matrix of distances from all source and destination pair
@@ -113,7 +113,7 @@ def create_distance_matrix(addresses,distance_list):
     return distance_matrix
 
 
-# In[21]:
+# In[29]:
 
 
 # Construct a matrix of travel times from all source and destination pair
@@ -143,7 +143,7 @@ def create_travel_time_matrix(addresses,travel_time_list):
     return travel_time_matrix
 
 
-# In[22]:
+# In[44]:
 
 
 # Generate iternary based on the requirements
@@ -184,12 +184,13 @@ def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, 
       travel_time_matrix[0][i], 'min || arrival time: ', int(time_start+(travel_time_matrix[0][i]//60)), ':', 
       int(travel_time_matrix[0][i]%60), '|| stay duration:', stay_durations[i], 'hours || daily time lapse: ', 
       int((travel_time_matrix[0][i] + stay_durations[i]*60)//60), 'hours',
-      int((travel_time_matrix[0][i] + stay_durations[i]*60)%60), 'minutes')
+      int((travel_time_matrix[0][i] + stay_durations[i]*60)%60), 'minutes', end = '\n\n')
     planned_dest.append(i)
     time_spent += travel_time_matrix[0][i] + stay_durations[i]*60
     
     # add more destinations into the day
-    while (time_spent < time_out_threshold * 0.6) and len(labels)>1:
+    j = 0
+    while (time_spent + travel_time_matrix[0][j] < time_out_threshold * 0.6) and len(labels)>1:
         t = 1
         j = distance_matrix[i].index(sorted(distance_matrix[i])[t])
         
@@ -203,7 +204,7 @@ def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, 
 
         # if no destination is available
         if (time_start+(time_spent + travel_time_matrix[i][j])/60 <= open_times[j]) or ((time_start*60+ time_spent + travel_time_matrix[i][j] + stay_durations[j]*60) >= close_times[j]*60):
-            print('Free time or rest early for the day!')
+            print('Free time or rest early for the day!', end = '\n\n')
             break
         # if time does not exceed daily limit including route back to the hotel    
         elif time_spent < time_out_threshold - travel_time_matrix[i][j] - stay_durations[j]*60 - travel_time_matrix[i][j]: 
@@ -214,7 +215,7 @@ def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, 
                   int((time_spent + travel_time_matrix[i][j])%60), '|| stay duration:',
                   stay_durations[j], 'hours || daily time lapse: ', 
                   int((time_spent+travel_time_matrix[i][j] + stay_durations[j]*60)//60), 'hours',
-                  int((time_spent+travel_time_matrix[i][j] + stay_durations[j]*60)%60), 'minutes')
+                  int((time_spent+travel_time_matrix[i][j] + stay_durations[j]*60)%60), 'minutes', end = '\n\n')
             time_spent += travel_time_matrix[i][j] + stay_durations[j]*60
             planned_dest.append(j)
             i = j
@@ -225,7 +226,8 @@ def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, 
               'min || arrival time: ', int(time_start+((time_spent+ travel_time_matrix[i][0])//60)), ':', 
               int((time_spent + travel_time_matrix[i][0])%60), '|| daily time lapse: ', 
               int((time_spent+travel_time_matrix[i][0] )//60), 'hours',
-              int((time_spent+travel_time_matrix[i][0])%60), 'minutes')
+              int((time_spent+travel_time_matrix[i][0])%60), 'minutes', end = '\n\n\n')
+
     return planned_dest
     
 
@@ -234,7 +236,7 @@ def limit_prioritized_destinations_by_time(travel_time_matrix, distance_matrix, 
         
 
 
-# In[23]:
+# In[31]:
 
 
 # Remove locations from the lists
@@ -271,7 +273,7 @@ def drop_destinations(planned_dest, labels, addresses, stay_durations, open_time
     return labels, addresses, stay_durations, open_times, close_times, start_the_day_with
 
 
-# In[24]:
+# In[45]:
 
 
 # Example 1: a trip to Sedona, Arizona
@@ -359,7 +361,7 @@ time_out_threshold = 660
 time_start = 9 
 
 
-# In[25]:
+# In[46]:
 
 
 itinerary = []
@@ -377,13 +379,13 @@ while len(labels)>1:
     x += 1
 
 
-# In[26]:
+# In[47]:
 
 
 print(itinerary)
 
 
-# In[27]:
+# In[48]:
 
 
 # Example 2: a trip to Portland, Oregon
@@ -460,7 +462,7 @@ time_start = 10
 time_out_threshold = 600 
 
 
-# In[28]:
+# In[49]:
 
 
 itinerary = []
@@ -478,8 +480,14 @@ while len(labels)>1:
     x += 1
 
 
-# In[29]:
+# In[50]:
 
 
 print(itinerary)
+
+
+# In[ ]:
+
+
+
 
